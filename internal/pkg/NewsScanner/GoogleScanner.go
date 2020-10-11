@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 )
 
@@ -64,7 +67,18 @@ func (g *GoogleScanner) SetApiKey(key string) {
 
 //IsFake tells whether the supplied news is fake
 func (g *GoogleScanner) IsFake(news string) (isFake bool, err error) {
-	resp, err := client.Get(fmt.Sprintf("%s?query=%s&languageCode=en-US&maxAgeDays=%d&key=%s", g.baseApi, news, g.maxAgeDays, g.key))
+	reqUrl := fmt.Sprintf("%s?query=%s&languageCode=en-US&maxAgeDays=%d&key=%s", g.baseApi, url.PathEscape(news), g.maxAgeDays, g.key)
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return
+	}
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(requestDump))
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}
@@ -77,6 +91,7 @@ func (g *GoogleScanner) IsFake(news string) (isFake bool, err error) {
 	}
 	var respStruct googleApiResp
 
+	fmt.Println(string(respBody))
 	err = json.Unmarshal(respBody, &respStruct)
 	if err != nil {
 		return
